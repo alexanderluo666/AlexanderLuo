@@ -23,6 +23,7 @@ def save_score(new_score): #for saving progress using json library, FILENAME is 
     dt = datetime.now().strftime("%Y-%m-%d %H:%M")
     data.append({"score": new_score, "date": dt})
 
+    data.sort(key=lambda x: x['score'], reverse=True)
 
     with open(FILENAME, "w") as f:
         json.dump(data, f, indent=4)
