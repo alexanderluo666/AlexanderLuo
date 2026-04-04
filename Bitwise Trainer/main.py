@@ -20,7 +20,7 @@ def save_score(new_score): #for saving progress using json library, FILENAME is 
             data = [] 
 
     time = datetime.now().strftime("%Y-%m-%d %H:%M")
-    data = ({"score": new_score, "date": time})
+    data.append({"score": new_score, "date": time})
 
 
     with open(FILENAME, "w") as f:
