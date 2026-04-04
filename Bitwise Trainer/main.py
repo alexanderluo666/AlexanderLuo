@@ -20,15 +20,15 @@ def save_score(new_score): #for saving progress using json library, FILENAME is 
             data = [] 
 
     time = datetime.now().strftime("%Y-%m-%d %H:%M")
-    data.append({"score": new_score, "date": time})
+    data = ({"score": new_score, "date": time})
 
 
     with open(FILENAME, "w") as f:
         json.dump(data, f, indent=4)
 
 def bitwise_trainer():
+    score = 0
     while True:
-        score = 0 
         ops = ['&', '|', '^']
         generation1,generation2 = random.randint(0,255),random.randint(0,255)
         operator = random.choice(ops)
@@ -44,6 +44,7 @@ def bitwise_trainer():
         user_input = input("Your answer (in Decimal): ")
 
         if user_input.lower() == 'exit': #.lower() converts characters into lowercased ones
+            save_score(score)
             break #exits
 
         try:
@@ -54,7 +55,8 @@ def bitwise_trainer():
                 print(f"Wrong! The answer was {real_ans} ({bin(real_ans)[2:].zfill(8)})\n")
         except ValueError:
             print("Please enter a valid number.\n")
-        print(f"Final Score: {score}")
+        finally:
+            print(f"Final Score: {score}")
 
 
 instructions()
