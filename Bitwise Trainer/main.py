@@ -16,12 +16,22 @@ def instructions():
 def save_score(new_score): #for saving progress using json library, FILENAME is defined at the front
     if os.path.exists(FILENAME):
             with open(FILENAME, "r") as f:
-                data = json.load(f)
-    else:
-            data = [] 
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError: #prevents errors of decoding
+                    data = []
+    else: data = []
 
     dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+
     data.append({"score": new_score, "date": dt})
+
+
+    for labels in data:
+        labels.pop("status", None) # Clean old labels
+    
+    if data:
+        data[0]["status"] = "ALL-TIME HIGH SCORE"
 
     data.sort(key=lambda x: x['score'], reverse=True) #sorting using lambda, reverse to get descending order
 
