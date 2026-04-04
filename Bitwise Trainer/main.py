@@ -1,4 +1,4 @@
-import random,datetime,json #random for generation, datetime for records, and json for saving
+import random, json ;from datetime import datetime #random for generation, datetime for records, and json for saving
 import json
 import os
 
@@ -12,6 +12,7 @@ def instructions():
     print("The symbols are & and, ^ xor, | or, << left shift, >> right shift \n")
     print("If you want to quit, just type 'exit'! \n")
 
+
 def save_score(new_score): #for saving progress using json library, FILENAME is defined at the front
     if os.path.exists(FILENAME):
             with open(FILENAME, "r") as f:
@@ -19,8 +20,8 @@ def save_score(new_score): #for saving progress using json library, FILENAME is 
     else:
             data = [] 
 
-    time = datetime.now().strftime("%Y-%m-%d %H:%M")
-    data.append({"score": new_score, "date": time})
+    dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+    data.append({"score": new_score, "date": dt})
 
 
     with open(FILENAME, "w") as f:
@@ -33,9 +34,10 @@ def bitwise_trainer():
         generation1,generation2 = random.randint(0,255),random.randint(0,255)
         operator = random.choice(ops)
 
-        if operator == '&': real_ans = generation1 & generation2
-        elif operator == '|': real_ans = generation1 | generation2
-        else: real_ans = generation1 ^ generation2
+        if operator == '&': real_ans = (generation1 & generation2) & 0xFF
+        elif operator == '|': real_ans = (generation1 | generation2) & 0xFF
+        else: real_ans = (generation1 ^ generation2) & 0xFF
+        # & 0xFF added so that the answer does not exceed 8-bit binary number limit
 
         print(f"Question: {generation1} {operator} {generation2}")
         print(f"Binary A: {bin(generation1)[2:].zfill(8)}") #zfill 8 to get 8bit binary(example:00000010)
@@ -44,7 +46,6 @@ def bitwise_trainer():
         user_input = input("Your answer (in Decimal): ")
 
         if user_input.lower() == 'exit': #.lower() converts characters into lowercased ones
-            save_score(score)
             break #exits
 
         try:
@@ -57,7 +58,7 @@ def bitwise_trainer():
             print("Please enter a valid number.\n")
         finally:
             print(f"Final Score: {score}")
-
+    save_score(score)
 
 instructions()
 bitwise_trainer()
