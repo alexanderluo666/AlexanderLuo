@@ -23,10 +23,10 @@ def save_score(new_score): #for saving progress using json library, FILENAME is 
     dt = datetime.now().strftime("%Y-%m-%d %H:%M")
     data.append({"score": new_score, "date": dt})
 
-    data.sort(key=lambda x: x['score'], reverse=True)
+    data.sort(key=lambda x: x['score'], reverse=True) #sorting using lambda, reverse to get descending order
 
     with open(FILENAME, "w") as f:
-        json.dump(data, f, indent=4)
+        json.dump(data[:10], f, indent=4) #only best 10 are displayed to reduce memory usage
 
 def bitwise_trainer():
     score = 0
