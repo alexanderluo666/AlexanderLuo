@@ -1,4 +1,4 @@
-import random, time,json #random for generation, time for records, and json for saving
+import random,datetime,json #random for generation, datetime for records, and json for saving
 import json
 import os
 
@@ -9,8 +9,22 @@ def instructions():
     print("Welcome to Bitwise Trainer! \n")
     print("Here, we can learn about Bitwise calculations! \n")
     print("You can also save your progress and high score to challenge yourself! \n")
-    print("Hope to see you soon! \n")
     print("The symbols are & and, ^ xor, | or, << left shift, >> right shift \n")
+    print("If you want to quit, just type 'exit'! \n")
+
+def save_score(new_score): #for saving progress using json library, FILENAME is defined at the front
+    if os.path.exists(FILENAME):
+            with open(FILENAME, "r") as f:
+                data = json.load(f)
+    else:
+            data = [] 
+
+    time = datetime.now().strftime("%Y-%m-%d %H:%M")
+    data.append({"score": new_score, "date": time})
+
+
+    with open(FILENAME, "w") as f:
+        json.dump(data, f, indent=4)
 
 def bitwise_trainer():
     while True:
@@ -42,23 +56,6 @@ def bitwise_trainer():
             print("Please enter a valid number.\n")
         print(f"Final Score: {score}")
 
-def save_score(new_score): #for saving progress using json library, FILENAME is defined at the front
-
-    if os.path.exists(FILENAME):
-        with open(FILENAME, "r") as f:
-            data = json.load(f)
-    else:
-        data = [] 
-
-
-    data.append({"score": new_score})
-
-
-    with open(FILENAME, "w") as f:
-        json.dump(data, f, indent=4)
-
-# Try running it!
-save_score(85)
 
 instructions()
 bitwise_trainer()
