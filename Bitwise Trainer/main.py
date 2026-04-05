@@ -1,7 +1,7 @@
-import random, json ;from datetime import datetime #random for generation, datetime for records, and json for saving
-import os
-
-FILENAME = "scores.json"
+import random, json, os;from datetime import datetime
+SCORES = "scores.json"
+DATA = "data.json"
+#import to use libraries, random for generating num; json and os for saving
 
 def instructions(start_name):
     print(f"Hello {start_name}! \n")
@@ -11,37 +11,32 @@ def instructions(start_name):
     print("The symbols are & and, ^ xor, | or, << left shift, >> right shift \n")
     print("If you want to quit, just type 'exit'! \n")
 
-DATA_FILE = "data.json"
 
-def add_new_name():
 
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w") as f:
+def add_new_name(): #for saving user using json library
+
+    if not os.path.exists(DATA):
+        with open(DATA, "w") as f:
             json.dump({"player_names": [], "high_score": 0}, f)
 
 
-    with open(DATA_FILE, "r") as f:
+    with open(DATA, "r") as f:
         data = json.load(f)
 
 
     if not data["player_names"]: 
         name = input("Welcome! Enter your primary display name: \n")
         data["player_names"].append(name)
-        with open(DATA_FILE, "w") as f:
+        with open(DATA, "w") as f:
             json.dump(data, f, indent=4)
     
     return data["player_names"]
 
 
-all_names = add_new_name()
-current_name = all_names[0]
-print(f"--- Logged in as: {current_name} --- \n")
 
-
-
-def save_score(new_score): #for saving progress using json library, FILENAME is defined at the front
-    if os.path.exists(FILENAME):
-            with open(FILENAME, "r") as f:
+def save_score(new_score): #for saving progress using json library
+    if os.path.exists(SCORES):
+            with open(SCORES, "r") as f:
                 try:
                     data = json.load(f)
                 except json.JSONDecodeError: #prevents errors of decoding
@@ -63,10 +58,12 @@ def save_score(new_score): #for saving progress using json library, FILENAME is 
     
 
     
-    with open(FILENAME, "w") as f:
+    with open(SCORES, "w") as f:
         json.dump(data[:10], f, indent=4) #only best 10 are displayed to reduce memory usage
 
-def bitwise_trainer():
+
+
+def generation(): #for number generation
     score = 0
     name = input("Please enter your name:\n")
     while True:
@@ -101,5 +98,10 @@ def bitwise_trainer():
     save_score(score)
 
 
+
+all_names = add_new_name()
+current_name = all_names[0]
+print(f"--- Logged in as: {current_name} --- \n")
+
 instructions(current_name)
-bitwise_trainer()
+generation()
