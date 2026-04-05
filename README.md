@@ -1,4 +1,5 @@
 # AlexanderLuo
+4/4/26
 Debugged python 3.14 --> fixed pygame/pygame-ce
 Used 3.12 instead after trying to reinstall visual studios code + python 3.14, currently using 3.15(beta version)
 
@@ -8,3 +9,6 @@ Bitwise Trainer selection is between 0-255(8-bit binary), as 8-bit is the usual 
 Bitwise Trainer also allows saving progress using json automatically
 
 Contains practise of &,^,| ; <<,>>  will be added; all bugs solved
+High score is also indicated inside the JSON file
+
+5/4/26
