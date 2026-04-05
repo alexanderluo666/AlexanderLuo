@@ -3,13 +3,13 @@ SCORES = "scores.json"
 DATA = "data.json"
 #import to use libraries, random for generating num; json and os for saving
 
-def instructions(player_id): # Add the ID as an input
+def instructions(player_id): # Add the ID as an input to indicate player
     with open(DATA, "r") as D:
         data = json.load(D)
     
     # Find the specific profile that matches the active_id
     user = next((p for p in data["profiles"] if p["id"] == player_id), None)
-    name = user["display_name"] if user else "Guest"
+    name = user["display_name"] if user else "Unknown"
     
     print(f"\nHello {name}! (ID: {player_id})")
     print("Welcome to Bitwise Trainer! \n")
@@ -22,7 +22,7 @@ def instructions(player_id): # Add the ID as an input
     
     
 
-def add_new_name(new_name):
+def add_new_name(new_name): #creates name for profile; links with select_or_create_profile
 
     if not os.path.exists(DATA):
         with open(DATA, "w") as D:
@@ -58,30 +58,45 @@ def add_new_name(new_name):
 
 
 
-def save_score(player_id, new_score): 
+def save_score(player_id, new_score):
+
     if os.path.exists(SCORES):
         with open(SCORES, "r") as S:
             try:
                 score_data = json.load(S)
-            except:
+            except json.JSONDecodeError:
                 score_data = []
     else:
         score_data = []
 
     dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+    score_data.append({"user_id": player_id, "score": new_score, "date": dt})
     
-    # Save the score LINKED to the ID
-    score_data.append({
-        "user_id": player_id, 
-        "score": new_score, 
-        "date": dt
-    })
-
     # Sort and keep top 10
     score_data.sort(key=lambda x: x['score'], reverse=True)
-    
     with open(SCORES, "w") as S:
         json.dump(score_data[:10], S, indent=4)
+
+
+    if os.path.exists(DATA):
+        with open(DATA, "r") as D:
+            user_data = json.load(D)
+
+
+        for profile in user_data["profiles"]:
+            if profile["id"] == player_id:
+
+                profile["games_played"] = profile.get("games_played", 0) + 1
+                
+
+                if new_score > profile.get("high_score", 0):
+                    profile["high_score"] = new_score
+                    print(f"!!! NEW PERSONAL BEST: {new_score} !!!")
+                break
+
+
+        with open(DATA, "w") as D:
+            json.dump(user_data, D, indent=4)
 
 
 
@@ -93,19 +108,27 @@ def question_system(player_id): #for number generation
         if generation1 == generation2: generation2 = random.randint(0,255)
         
         operator = random.choice(possible_operators)
+        lrshift = random.randint(0,4)
+
 
         if operator == '&': real_ans = (generation1 & generation2) & 0xFF
         elif operator == '|': real_ans = (generation1 | generation2) & 0xFF
         elif operator == '^': real_ans = (generation1 ^ generation2) & 0xFF
-        elif operator == '<<': real_ans = (generation1 << random.randint(0,4)) &0xFF
-        else: real_ans = (generation1 << random.randint(0,4)) &0xFF
+        elif operator == '<<': real_ans = (generation1 << lrshift) &0xFF
+        else: real_ans = (generation1 >> lrshift) &0xFF
         # & 0xFF added so that the answer does not exceed 8-bit binary number limit
         # replaced generation 2 with random.randint(0,4) for <<,>>, to get smaller results
-        print(f"Question: {generation1} {operator} {generation2}")
-        print(f"Binary A: {bin(generation1)[2:].zfill(8)}") 
-        print(f"Binary B: {bin(generation2)[2:].zfill(8)}")
-        #zfill 8 to get 8bit binary(example:00000010)
         
+        if operator == '>>' or operator == '<<':
+            print(f"Question: {generation1} {operator} {lrshift}")
+            print(f"Binary A: {bin(generation1)[2:].zfill(8)}") 
+            print(f"Binary B: {bin(lrshift)[2:].zfill(8)}")
+        else:
+            print(f"Question: {generation1} {operator} {generation2}")
+            print(f"Binary A: {bin(generation1)[2:].zfill(8)}") 
+            print(f"Binary B: {bin(generation2)[2:].zfill(8)}")
+        #zfill 8 to get 8bit binary(example:00000010)
+
         user_input = input("Your answer (in Decimal) / exit: ")
 
         if user_input.lower() == 'exit': #.lower() converts characters into lowercased ones
@@ -127,23 +150,62 @@ def question_system(player_id): #for number generation
 
 def show_leaderboard():
     with open(DATA, "r") as D:
-        profiles = json.load(D)["profiles"]
+        data = json.load(D)
     
-    with open(SCORES, "r") as S:
-        scores = json.load(S)
+    # Sort by high score as usual
+    sorted_profiles = sorted(data["profiles"], key=lambda x: x.get('high_score', 0), reverse=True)
 
-    print("\n--- GLOBAL TOP 10 ---")
-    for s in scores:
-
-        user = next((p for p in profiles if p["id"] == s["user_id"]), None)
+    print("\n--- BITWISE TRAINER LEADERBOARD ---")
+    for i, p in enumerate(sorted_profiles[:10], 1):
+        name = p['display_name']
+        score = p.get('high_score', 0)
+        games = p.get('games_played', 0)
         
-        name = user["display_name"] if user else "Unknown"
-        id_tag = f"#{s['user_id']}"
+        # Displaying name, score, and total games side-by-side
+        print(f"{i}. {name:<15} | Best: {score:>4} pts | Games: {games}")
+
+
+
+def select_or_create_profile(): #creates profile
+
+
+    if not os.path.exists(DATA):
+        return add_new_name(input("First time setup! Enter your name: "))
+
+    with open(DATA, "r") as D:
+        data = json.load(D)
+    
+    profiles = data.get("profiles", [])
+
+    if not profiles:
+        return add_new_name(input("No profiles found. Enter your name: "))
+
+    print("\n=== BITWISE TRAINER LOGIN ===")
+    for p in profiles:
+        print(f"[{p['id']}] {p['display_name']} (Best: {p.get('high_score', 0)})")
+    print("[N] Create New Profile")
+
+    while True:
+        choice = input("\nSelect ID or 'N': ").strip().upper()
         
-        print(f"[{id_tag}] {name}: {s['score']} pts ({s['date']})")
+        if choice == 'N':
+            return add_new_name(input("Enter new name: "))
+        
+        try:
+            p_id = int(choice)
+            if any(p['id'] == p_id for p in profiles):
+                return p_id
+            print("ID not found.")
+        except ValueError:
+            print("Please enter a number or 'N'.")
 
 
 
-active_id = add_new_name(input("Please enter your name: "))
+    show_leaderboard()
+
+
+
+show_leaderboard()
+active_id = select_or_create_profile()
 instructions(active_id)
 question_system(active_id)
