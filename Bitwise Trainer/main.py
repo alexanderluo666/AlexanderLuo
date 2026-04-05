@@ -4,7 +4,7 @@ DATA = "data.json"
 #import to use libraries, random for generating num; json and os for saving
 
 def instructions(start_name):
-    print(f"Hello {start_name}! \n")
+    print(f"\n Hello {start_name}! \n")
     print("Welcome to Bitwise Trainer! \n")
     print("Here, we can learn about Bitwise calculations! \n")
     print("You can also save your progress and high score to challenge yourself! \n")
@@ -16,19 +16,18 @@ def instructions(start_name):
 def add_new_name(): #for saving user using json library
 
     if not os.path.exists(DATA):
-        with open(DATA, "w") as f:
-            json.dump({"player_names": [], "high_score": 0}, f)
+        with open(DATA, "w") as D:
+            json.dump({"player_names": [], "high_score": 0}, D)
 
 
-    with open(DATA, "r") as f:
-        data = json.load(f)
+    with open(DATA, "r") as D:
+        data = json.load(D)
 
 
-    if not data["player_names"]: 
-        name = input("Welcome! Enter your primary display name: \n")
-        data["player_names"].append(name)
-        with open(DATA, "w") as f:
-            json.dump(data, f, indent=4)
+    name = input("Welcome! Enter your display name: \n")
+    data["player_names"].append(name)
+    with open(DATA, "w") as D:
+        json.dump(data, D, indent=4)
     
     return data["player_names"]
 
@@ -36,9 +35,9 @@ def add_new_name(): #for saving user using json library
 
 def save_score(new_score): #for saving progress using json library
     if os.path.exists(SCORES):
-            with open(SCORES, "r") as f:
+            with open(SCORES, "r") as S:
                 try:
-                    data = json.load(f)
+                    data = json.load(S)
                 except json.JSONDecodeError: #prevents errors of decoding
                     data = []
     else: data = []
@@ -52,24 +51,25 @@ def save_score(new_score): #for saving progress using json library
         labels.pop("status", None) # Clean old labels
     
     if data:
-        data[0]["status"] = "ALL-TIME HIGH SCORE"
+        data[0]["status"] = "High Score"
 
     data.sort(key=lambda x: x['score'], reverse=True) #sorting using lambda, reverse to get descending order
     
 
     
-    with open(SCORES, "w") as f:
-        json.dump(data[:10], f, indent=4) #only best 10 are displayed to reduce memory usage
+    with open(SCORES, "w") as S:
+        json.dump(data[:10], S, indent=4) #only best 10 are displayed to reduce memory usage
 
 
 
-def generation(): #for number generation
+def question_system(): #for number generation
     score = 0
-    name = input("Please enter your name:\n")
     while True:
-        ops = ['&', '|', '^']
+        possible_operators = ['&', '|', '^']
         generation1,generation2 = random.randint(0,255),random.randint(0,255)
-        operator = random.choice(ops)
+        if generation1 == generation2: generation2 = random.randint(0,255)
+        
+        operator = random.choice(possible_operators)
 
         if operator == '&': real_ans = (generation1 & generation2) & 0xFF
         elif operator == '|': real_ans = (generation1 | generation2) & 0xFF
@@ -80,7 +80,7 @@ def generation(): #for number generation
         print(f"Binary A: {bin(generation1)[2:].zfill(8)}") #zfill 8 to get 8bit binary(example:00000010)
         print(f"Binary B: {bin(generation2)[2:].zfill(8)}")
 
-        user_input = input("Your answer (in Decimal): ")
+        user_input = input("Your answer (in Decimal) / exit: ")
 
         if user_input.lower() == 'exit': #.lower() converts characters into lowercased ones
             break #exits
@@ -95,13 +95,8 @@ def generation(): #for number generation
             print("Please enter a valid number.\n")
         finally:
             print(f"Final Score: {score}")
-    save_score(score)
+    save_score(score) #when exit is typed, save_score gets used
 
 
-
-all_names = add_new_name()
-current_name = all_names[0]
-print(f"--- Logged in as: {current_name} --- \n")
-
-instructions(current_name)
-generation()
+instructions((add_new_name()))
+question_system()
