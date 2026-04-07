@@ -204,8 +204,14 @@ def select_or_create_profile(): #creates profile
     show_leaderboard()
 
 
+def main():
+    try:
+        show_leaderboard()
+    except FileNotFoundError:
+        exit
+    active_id = select_or_create_profile()
+    instructions(active_id)
+    question_system(active_id)
 
-show_leaderboard()
-active_id = select_or_create_profile()
-instructions(active_id)
-question_system(active_id)
+    
+main()
