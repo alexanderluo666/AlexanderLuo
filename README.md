@@ -15,3 +15,6 @@ High score is also indicated inside the JSON file
 A naming system is added in Bitwise Trainer, further features of naming system in Bitwise Trainer will be added soon; data.json for user, scores.json for scores. ID system added to furthermore specify users.
 
 Left and Right shift calculation added
+
+11/4/26
+Python debugged again; path finder added, used inspect on websites and BS4, requests
