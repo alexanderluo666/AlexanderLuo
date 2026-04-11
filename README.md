@@ -17,4 +17,6 @@ A naming system is added in Bitwise Trainer, further features of naming system i
 Left and Right shift calculation added
 
 11/4/26
-Python debugged again; path finder added, used inspect on websites and BS4, requests
+Python debugged again; path finder added, used JSON for local file reading and BS4, requests
+Path finding using Breadth-First Search to find relationships
+<img width="798" height="405" alt="FILE" src="https://github.com/user-attachments/assets/67137bf4-430f-4ede-b804-e8a1bcbd00e9" />
