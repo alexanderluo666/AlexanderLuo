@@ -1,6 +1,6 @@
 import json
 from collections import deque
-#data is stored inside data.json
+#data is stored inside data.json; uses Breadth First Search
 
 def find_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\Github\data.json"):
 
