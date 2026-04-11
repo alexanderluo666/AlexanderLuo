@@ -1,58 +1,46 @@
-import requests
-from bs4 import BeautifulSoup
+import json
 from collections import deque
+#data is stored inside data.json
 
-def get_related_names(name):
-    """
-    Scrapes names.org to find the 'Related Names' section.
-    """
-    url = f"https://www.names.org/n/{name.lower()}/about"
+def find_name_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\Github\Path Finder\data.json"):
+
     try:
-        response = requests.get(url, timeout=5)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Look for the 'Related Names' section - usually in <a> tags within a specific div
-        related_section = soup.find('div', id='related-names')
-        if not related_section:
-            return []
-            
-        return [a.text.strip() for a in related_section.find_all('a')]
-    except:
-        return []
+        with open(data_file, 'r') as d:
+            graph = json.load(d)
+    except FileNotFoundError:
+        print("Error: data.json not found!")
+        return -1
 
-def find_distance(start_name, target_name, max_depth=3):
-    """
-    BFS Algorithm to find the shortest distance between two names.
-    """
-    # Queue stores: (current_name, current_distance)
-    queue = deque([(start_name, 0)])
-    visited = {start_name.lower()}
-    
-    print(f"Searching for connection: {start_name} -> {target_name}...")
+    queue = deque([(start, 0)])
+    visited = {start}
+
+    print(f"--- Searching for relationship: {start} -> {target} ---")
 
     while queue:
-        current, distance = queue.popleft()
+        current, dist = queue.popleft()
+
+
+        if current.lower() == target.lower():
+            return dist
+
+
+        neighbors = graph.get(current, [])
         
-        if current.lower() == target_name.lower():
-            return distance
-            
-        if distance < max_depth:
-            print(f"  Exploring {current} (Distance: {distance})...")
-            related = get_related_names(current)
-            
-            for name in related:
-                if name.lower() not in visited:
-                    visited.add(name.lower())
-                    queue.append((name, distance + 1))
-                    
-    return -1
+        for neighbor in neighbors:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, dist + 1))
+                print(f"  Checked {neighbor} (Distance: {dist + 1})")
 
-# --- Run the Search ---
-start = "Alexander"
-end = "Lex"
-dist = find_distance(start, end)
+    return -1 
 
-if dist != -1:
-    print(f"\nSuccess! {start} is related to {end} by a distance of {dist}.")
+
+start = "example"
+end = "example2"
+distance = find_name_distance(start, end)
+
+if distance != -1:
+    print(f"\nSUCCESS: '{start}' is {distance} steps away from '{end}'.")
 else:
-    print(f"\nNo connection found within the depth limit.")
+    print(f"\nFAILURE: No connection found between '{start}' and '{end}'.")
+    
