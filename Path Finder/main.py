@@ -2,7 +2,7 @@ import json
 from collections import deque
 #data is stored inside data.json
 
-def find_name_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\Github\Path Finder\data.json"):
+def find_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\Github\data.json"):
 
     try:
         with open(data_file, 'r') as d:
@@ -35,9 +35,40 @@ def find_name_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desk
     return -1 
 
 
-start = "example"
-end = "example2"
-distance = find_name_distance(start, end)
+import json
+import os
+
+def update_data(name, related_list):
+    filename = "data.json"
+    
+
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            data = json.load(f)
+    else:
+        data = {}
+
+
+    clean_name = name.capitalize()
+    clean_related = [r.capitalize() for r in related_list]
+    
+    data[clean_name] = clean_related
+
+
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4)
+    
+    print(f"Successfully updated {clean_name} with {len(clean_related)} connections.")
+
+
+update_data("Alexander", ["Alex", "Lex", "Xander", "Sasha"])
+update_data("Alex", ["Alexander", "Alexis", "Axel"])
+update_data("Xander", ["Alexander", "Zander"])
+
+
+start = "Alexander"
+end = "Zander"
+distance = find_distance(start, end)
 
 if distance != -1:
     print(f"\nSUCCESS: '{start}' is {distance} steps away from '{end}'.")
