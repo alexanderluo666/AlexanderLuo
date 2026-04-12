@@ -1,14 +1,14 @@
-import json
+import json, os
 from collections import deque
 #data is stored inside data.json; uses Breadth First Search
 
-def find_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\Github\data.json"):
+def find_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\Github\connection.json"):
 
     try:
-        with open(data_file, 'r') as d:
-            graph = json.load(d)
+        with open(data_file, 'r') as D:
+            graph = json.load(D)
     except FileNotFoundError:
-        print("Error: data.json not found!")
+        print("Error: connection.json not found!")
         return -1
 
     queue = deque([(start, 0)])
@@ -31,34 +31,31 @@ def find_distance(start, target, data_file = r"C:\Users\alexa\OneDrive\Desktop\G
                 visited.add(neighbor)
                 queue.append((neighbor, dist + 1))
                 print(f"  Checked {neighbor} (Distance: {dist + 1})")
-
     return -1 
 
 
-import json
-import os
 
-def update_data(name, related_list):
-    filename = "data.json"
+def update_data(point, related_list):
+    filename = "connection.json"
     
 
     if os.path.exists(filename):
-        with open(filename, 'r') as f:
-            data = json.load(f)
+        with open(filename, 'r') as D:
+            data = json.load(D)
     else:
         data = {}
 
 
-    clean_name = name.capitalize()
+    clean_point = point.capitalize()
     clean_related = [r.capitalize() for r in related_list]
     
-    data[clean_name] = clean_related
+    data[clean_point] = clean_related
 
 
     with open(filename, 'w') as f:
         json.dump(data, f, indent=4)
     
-    print(f"Successfully updated {clean_name} with {len(clean_related)} connections.")
+    print(f"Successfully updated {clean_point} with {len(clean_related)} connections.")
 
 
 update_data("Alexander", ["Alex", "Lex", "Xander", "Sasha"])
