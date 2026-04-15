@@ -22,4 +22,4 @@ Path finding using Breadth-First Search to find relationships
 <img width="798" height="405" alt="FILE" src="https://github.com/user-attachments/assets/67137bf4-430f-4ede-b804-e8a1bcbd00e9" />
 
 12/4/26
-Menu updated in path finder
+Menu updated in path finder, more settings(transit, sibling) added.
