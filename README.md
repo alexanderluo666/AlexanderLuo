@@ -23,3 +23,7 @@ Path finding using Breadth-First Search to find relationships
 
 12/4/26
 Menu updated in path finder, more settings(transit, sibling) added.
+
+
+16/4/26
+Password Manager added
