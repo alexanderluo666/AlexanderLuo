@@ -27,3 +27,6 @@ Menu updated in path finder, more settings(transit, sibling) added.
 
 16/4/26
 Password Manager added
+
+21/4/26
+Password Manager turned into P2P chat, with encryption and hashing, allows peer chat with IP
