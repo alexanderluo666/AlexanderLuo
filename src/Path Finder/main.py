@@ -1,13 +1,17 @@
 import json
 import os
+import glob  # For finding all timestamped reports
 import networkx as nx
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from datetime import datetime
 from itertools import combinations
 from networkx.algorithms.community import greedy_modularity_communities
 
 DB_PATH = "connection.json"
+CONFIG_PATH = "config.json"
 
+# Default configuration
 config = {
     "show_siblings": True,
     "show_transit": False,
@@ -15,6 +19,26 @@ config = {
     "highlight_list": [],
     "max_transit_dist": 2
 }
+
+# --- PERSISTENCE LOGIC ---
+
+def load_config():
+    """Loads settings from JSON on startup."""
+    global config
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'r') as f:
+            try:
+                saved_config = json.load(f)
+                config.update(saved_config)
+            except:
+                print("[!] Config file corrupted, using defaults.")
+
+def save_config():
+    """Saves current settings to JSON."""
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=4)
+
+# --- GRAPH ENGINE ---
 
 def get_graph():
     if not os.path.exists(DB_PATH): return None
@@ -34,29 +58,18 @@ def get_graph():
     return G
 
 def get_node_colors(G):
-    """Detects communities and assigns colors. Highlights override communities."""
-    # 1. Detect Communities (Groups)
     communities = list(greedy_modularity_communities(G))
     color_map = {}
-    # Modern color palette
     palette = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
-    
-    for i, community in enumerate(communities):
+    for i, comm in enumerate(communities):
         color = palette[i % len(palette)]
-        for node in community:
-            color_map[node] = color
+        for node in comm: color_map[node] = color
+    return ['orange' if n in config["highlight_list"] else color_map.get(n, 'skyblue') for n in G.nodes()]
 
-    # 2. Apply colors, but allow 'highlight_list' (orange) to override
-    final_colors = []
-    for node in G.nodes():
-        if node in config["highlight_list"]:
-            final_colors.append('orange')
-        else:
-            final_colors.append(color_map.get(node, 'skyblue'))
-    return final_colors
+# --- VISUALIZATION ---
 
 def visualize_2d(G):
-    plt.figure(figsize=(12, 9))
+    plt.figure("Path Finder", figsize=(12, 9))
     pos = nx.spring_layout(G, k=1.5, seed=42)
     nx.draw_networkx_edges(G, pos, edge_color='gray', width=1.5, alpha=0.3)
     
@@ -64,17 +77,15 @@ def visualize_2d(G):
         for u, v in combinations(G.nodes(), 2):
             if not G.has_edge(u, v):
                 try:
-                    path = nx.shortest_path(G, u, v)
-                    dist = len(path) - 1
+                    dist = nx.shortest_path_length(G, u, v)
                     if 1 < dist <= config["max_transit_dist"]:
                         nx.draw_networkx_edges(G, pos, edgelist=[(u, v)], edge_color='blue', 
                                                style='--', alpha=0.15, connectionstyle="arc3,rad=0.3")
                 except: continue
 
-    colors = get_node_colors(G)
-    nx.draw_networkx_nodes(G, pos, node_color=colors, node_size=1600, edgecolors='black')
+    nx.draw_networkx_nodes(G, pos, node_color=get_node_colors(G), node_size=1600, edgecolors='black')
     nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold')
-    plt.title(f"Path Finder v5.8 | Colors represent detected communities")
+    plt.title("Path Finder | Colors = Communities")
     plt.show()
 
 def visualize_3d(G):
@@ -83,47 +94,40 @@ def visualize_3d(G):
     for u, v in G.edges():
         x0, y0, z0 = pos[u]; x1, y1, z1 = pos[v]
         edge_x.extend([x0, x1, None]); edge_y.extend([y0, y1, None]); edge_z.extend([z0, z1, None])
+    
+    traces = [go.Scatter3d(x=edge_x, y=edge_y, z=edge_z, mode='lines', 
+                           line=dict(color='black', width=1.5), name='Direct')]
 
-    traces = [go.Scatter3d(x=edge_x, y=edge_y, z=edge_z, mode='lines', line=dict(color='black', width=1), name='Direct')]
+    if config["show_transit"]:
+        t_x, t_y, t_z = [], [], []
+        for u, v in combinations(G.nodes(), 2):
+            if not G.has_edge(u, v):
+                try:
+                    dist = nx.shortest_path_length(G, u, v)
+                    if 1 < dist <= config["max_transit_dist"]:
+                        x0, y0, z0 = pos[u]; x1, y1, z1 = pos[v]
+                        t_x.extend([x0, x1, None]); t_y.extend([y0, y1, None]); t_z.extend([z0, z1, None])
+                except: continue
+        if t_x:
+            traces.append(go.Scatter3d(x=t_x, y=t_y, z=t_z, mode='lines', 
+                                       line=dict(color='blue', width=1, dash='dash'), 
+                                       opacity=0.3, name='Transit'))
 
     node_x, node_y, node_z = [], [], []
     for node in G.nodes():
         x, y, z = pos[node]
         node_x.append(x); node_y.append(y); node_z.append(z)
 
-    colors = get_node_colors(G)
-    traces.append(go.Scatter3d(x=node_x, y=node_y, z=node_z, mode='markers+text', text=list(G.nodes()),
-                               marker=dict(size=5, color=colors, line=dict(color='black', width=1))))
+    traces.append(go.Scatter3d(x=node_x, y=node_y, z=node_z, mode='markers+text', 
+                               text=list(G.nodes()), textposition="top center",
+                               marker=dict(size=6, color=get_node_colors(G), 
+                               line=dict(color='black', width=1))))
     
     fig = go.Figure(data=traces)
-    fig.update_layout(title="Path Finder 3D | Community Colored")
+    fig.update_layout(title="Path Finder 3D Engine")
     fig.show()
 
-def run_network_analysis():
-    G = get_graph()
-    if not G: return print("[!] No data.")
-
-    # Influential Person Logic (Degree Centrality)
-    centrality = nx.degree_centrality(G)
-    influencer = max(centrality, key=centrality.get)
-    
-    lengths = dict(nx.all_pairs_shortest_path_length(G))
-    all_dists = [dist for s in lengths for e, dist in lengths[s].items() if s != e]
-    
-    if not all_dists: return print("[!] Not enough connections.")
-
-    n = len(G.nodes())
-    avg_dos = sum(all_dists) / len(all_dists)
-    
-    print(f"\n--- Path Finder: NETWORK STATS ---")
-    print(f"Total People: {n}")
-    print(f"Most Influential: {influencer} ({int(centrality[influencer]*(n-1))} direct links)")
-    print(f"Average DoS: {avg_dos:.2f}")
-    print(f"Density: {nx.density(G):.4f}")
-
-    with open("stats_report.txt", "w") as f:
-        f.write(f"Path Finder v5.8 Report\nMost Influential: {influencer}\nAvg DoS: {avg_dos:.2f}")
-    print("✔ Saved to 'stats_report.txt'")
+# --- CORE FEATURES ---
 
 def update_data():
     data = {}
@@ -150,39 +154,72 @@ def search_path():
         try:
             path = nx.shortest_path(G, s, t)
             config["highlight_list"] = path
-            print(f"✅ Path: {' -> '.join(path)}")
+            save_config()
+            print(f"✅ Path found: {' -> '.join(path)}")
+            print(f"📍 Distance: {len(path) - 1} Degrees of Separation")
         except nx.NetworkXNoPath: print("❌ No path found.")
     else: print("[!] Name missing.")
 
-def wipe_all_data():
-    if input("\nType 'DELETE' to wipe all data: ") == "DELETE":
-        for f in [DB_PATH, "stats_report.txt"]:
-            if os.path.exists(f): os.remove(f)
-        config["highlight_list"] = []
-        print("✔ Wiped.")
+def run_network_analysis():
+    G = get_graph()
+    if not G: return print("[!] No data.")
+    centrality = nx.degree_centrality(G)
+    influencer = max(centrality, key=centrality.get)
+    lengths = dict(nx.all_pairs_shortest_path_length(G))
+    all_dists = [d for s in lengths for e, d in lengths[s].items() if s != e]
+    if not all_dists: return print("[!] Not enough connections.")
+    
+    n, avg_dos = len(G.nodes()), sum(all_dists) / len(all_dists)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    file_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    print(f"\n--- Path Finder: NETWORK STATS ---")
+    print(f"Total People: {n}\nMost Influential: {influencer}")
+    print(f"Average Separation: {avg_dos:.2f}\nDensity: {nx.density(G):.4f}")
+
+    filename = f"report_{file_timestamp}.txt"
+    with open(filename, "w") as f:
+        f.write(f"Path Finder Report\nGenerated: {now}\nInfluencer: {influencer}\nDoS: {avg_dos:.2f}")
+    print(f"✔ Report saved as '{filename}'")
 
 def settings_menu():
     while True:
         print(f"\n--- Path Finder: SETTINGS ---")
-        print(f"[1] Toggle Siblings: {config['show_siblings']}")
-        print(f"[2] Toggle Transit: {config['show_transit']}")
-        print(f"[3] Max Transit Dist: {config['max_transit_dist']}")
-        print(f"[4] Toggle 3D Mode: {config['render_3d']}")
+        print(f"[1] Toggle Siblings: {'ON' if config['show_siblings'] else 'OFF'}")
+        print(f"[2] Toggle Transit:  {'ON' if config['show_transit'] else 'OFF'}")
+        print(f"[3] Max Transit Distance: {config['max_transit_dist']}")
+        print(f"[4] Toggle 3D Mode:  {'3D' if config['render_3d'] else '2D'}")
         print(f"[5] Clear Search Highlights\n[6] Back")
         
         choice = input("\nSelect: ")
         if choice == '1': config["show_siblings"] = not config["show_siblings"]
         elif choice == '2': config["show_transit"] = not config["show_transit"]
         elif choice == '3':
-            try: config["max_transit_dist"] = int(input("Enter max dist (1-5): "))
+            try: config["max_transit_dist"] = int(input("Max dist (1-5): "))
             except: pass
         elif choice == '4': config["render_3d"] = not config["render_3d"]
         elif choice == '5': config["highlight_list"] = []
         elif choice == '6': break
+        save_config()
+
+def wipe_all_data():
+    if input("\nType 'DELETE' to wipe ALL data and reports: ") == "DELETE":
+        # Delete static files
+        for f in [DB_PATH, CONFIG_PATH, "stats_report.txt"]:
+            if os.path.exists(f): os.remove(f)
+        
+        # Delete all timestamped reports
+        reports = glob.glob("report_*.txt")
+        for r in reports:
+            os.remove(r)
+        
+        config["highlight_list"] = []
+        print("✔ All data and reports wiped.")
 
 def main():
+    load_config()
     while True:
-        print(f"\n{'='*30}\n  Path Finder v5.8\n{'='*30}")
+        print(f"\n{'='*30}\n  Path Finder v5.8.4\n{'='*30}")
         print("1. Update Data\n2. Search Path\n3. View Map\n4. Network Analysis\n5. Settings\n6. WIPE DATA\n7. Exit")
         c = input("\nSelect: ")
         if c == '1': update_data()
