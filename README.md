@@ -31,3 +31,4 @@ Password Manager added
 21/4/26
 Password Manager turned into P2P chat, with encryption and hashing, allows peer chat with IP
 Several functions including: friend group, calculating Dos, and 3D graph in Path Finder is added.
+Now using venv for projects, folder management updated including src folder, requirements.txt and docs for documents.
