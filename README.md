@@ -30,3 +30,4 @@ Password Manager added
 
 21/4/26
 Password Manager turned into P2P chat, with encryption and hashing, allows peer chat with IP
+Several functions including: friend group, calculating Dos, and 3D graph in Path Finder is added.
