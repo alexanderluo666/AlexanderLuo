@@ -1,96 +1,93 @@
+import socket
+import threading
 import json
-import os
 import base64
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.fernet import Fernet
 
-class PasswordManager:
-    def __init__(self, filename="vault.json"):
-        self.filename = filename
-        self.key = None
-        self.vault_data = {"meta": {}, "entries": []}
+# --- Security Setup ---
+SHARED_SALT = b'\x82\x11\xec\x01\x0b\xeb\x12\x07\xeb\x8d\xf5\x0f\x0c\x8e\x12\x0f'
 
-    def _derive_key(self, master_password, salt=None):
-        """Converts a plain text password into a secure 32-byte key."""
-        if salt is None:
-            salt = os.urandom(16)
-        
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100000,
-        )
-        key = base64.urlsafe_b64encode(kdf.derive(master_password.encode()))
-        return key, salt
+def derive_key(password: str):
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=SHARED_SALT,
+        iterations=100000,
+    )
+    return base64.urlsafe_b64encode(kdf.derive(password.encode()))
 
-    def initialize_vault(self, master_password):
-        """Creates a new vault file with a fresh salt."""
-        self.key, salt = self._derive_key(master_password)
-        self.vault_data["meta"]["salt"] = base64.b64encode(salt).decode('utf-8')
-        self.save_to_disk()
-        print("New vault initialized.")
+class SecureChat:
+    def __init__(self, username, password):
+        self.username = username
+        self.fernet = Fernet(derive_key(password))
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.running = True
 
-    def unlock_vault(self, master_password):
-        """Loads the salt from the JSON and generates the matching key."""
-        if not os.path.exists(self.filename):
-            print("Vault file not found. Initialize first.")
-            return False
-            
-        with open(self.filename, "r") as f:
-            self.vault_data = json.load(f)
-            
-        salt = base64.b64decode(self.vault_data["meta"]["salt"])
-        self.key, _ = self._derive_key(master_password, salt)
-        return True
+    def encrypt_payload(self, text):
+        data = json.dumps({"user": self.username, "msg": text})
+        return self.fernet.encrypt(data.encode())
 
-    def add_password(self, service, username, password):
-        """Encrypts a password and adds it to the internal list."""
-        f = Fernet(self.key)
-        encrypted_pw = f.encrypt(password.encode()).decode('utf-8')
-        
-        self.vault_data["entries"].append({
-            "service": service,
-            "username": username,
-            "password": encrypted_pw
-        })
-        self.save_to_disk()
+    def decrypt_payload(self, token):
+        try:
+            data = json.loads(self.fernet.decrypt(token).decode())
+            return f"\n[{data['user']}]: {data['msg']}"
+        except:
+            return "\n!! Decryption Error: Wrong Password or Corrupt Data !!"
 
-    def get_passwords(self):
-        """Decrypts and returns all stored passwords."""
-        f = Fernet(self.key)
-        results = []
-        for entry in self.vault_data["entries"]:
-            decrypted_pw = f.decrypt(entry["password"].encode()).decode('utf-8')
-            results.append(f"{entry['service']} | {entry['username']}: {decrypted_pw}")
-        return results
+    def listen_loop(self, conn):
+        while self.running:
+            try:
+                raw_data = conn.recv(2048)
+                if not raw_data:
+                    print("\n[SYSTEM]: Connection closed by partner.")
+                    self.running = False
+                    break
+                print(self.decrypt_payload(raw_data))
+                print(f"[{self.username}]: ", end="", flush=True)
+            except ConnectionResetError:
+                print("\n[SYSTEM]: Connection was forcibly reset by the peer.")
+                self.running = False
+                break
+            except Exception as e:
+                print(f"\n[SYSTEM]: Unexpected Error: {e}")
+                self.running = False
+                break
 
-    def save_to_disk(self):
-        with open(self.filename, "w") as f:
-            json.dump(self.vault_data, f, indent=4)
+# --- Execution ---
+my_name = input("Enter your username: ")
+room_pass = input("Enter room password: ")
+chat = SecureChat(my_name, room_pass)
 
-# --- Example Usage ---
-if __name__ == "__main__":
-    pm = PasswordManager()
-    
-    # Use 'initialize_vault' for the first run, then 'unlock_vault' thereafter
-    mp = input("Enter Master Password: ")
-    
-    if not os.path.exists("vault.json"):
-        pm.initialize_vault(mp)
+mode = input("(H)ost or (J)oin? ").lower()
+try:
+    if mode == 'h':
+        chat.sock.bind(('0.0.0.0', 65432)) 
+        chat.sock.listen(1)
+        print("Waiting for partner...")
+        conn, addr = chat.sock.accept()
+        print(f"Connected to {addr}")
     else:
-        pm.unlock_vault(mp)
+        target = input("Partner IP (use 127.0.0.1 for local): ")
+        chat.sock.connect((target, 65432))
+        conn = chat.sock
 
-    while True:
-        choice = input("\n1. Add Password\n2. View Passwords\n3. Exit\n> ")
-        if choice == "1":
-            s = input("Service: ")
-            u = input("Username: ")
-            p = input("Password: ")
-            pm.add_password(s, u, p)
-        elif choice == "2":
-            for line in pm.get_passwords():
-                print(line)
-        else:
+    threading.Thread(target=chat.listen_loop, args=(conn,), daemon=True).start()
+
+    print("--- Chat Started (Type 'exit' to quit) ---")
+    while chat.running:
+        message = input(f"[{my_name}]: ")
+        if message.lower() == 'exit': 
+            chat.running = False
             break
+        # Only send if there's actual text and connection is alive
+        if message.strip() and chat.running:
+            try:
+                conn.send(chat.encrypt_payload(message))
+            except:
+                print("[SYSTEM]: Failed to send message. Connection lost.")
+                break
+finally:
+    chat.sock.close()
+    print("Program exited.")
