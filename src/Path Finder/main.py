@@ -2,7 +2,10 @@ import json
 import os
 import glob  # For finding all timestamped reports
 import networkx as nx
+import matplotlib
+matplotlib.use("TkAgg") # for linux(maybe macos)
 import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt #--> for windows users
 import plotly.graph_objects as go
 from datetime import datetime
 from itertools import combinations
