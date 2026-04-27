@@ -99,7 +99,7 @@ def menu():
         elif choice == "4":
             find_expensive_items(my_expenses,input("Threshold:"))
         elif choice == "5":
-            print("Goodbye!")
+            print("Goodbye!!!")
             break
         else:
             print("Unknown command.")
