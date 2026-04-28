@@ -3,9 +3,9 @@ import os
 import glob  # For finding all timestamped reports
 import networkx as nx
 import matplotlib
-matplotlib.use("TkAgg") # for linux(maybe macos)
+matplotlib.use("TkAgg") # for linux(maybe macos) in vscode in running
 import matplotlib.pyplot as plt
-#import matplotlib.pyplot as plt #--> for windows users
+#import matplotlib.pyplot as plt #--> for windows users/linux(maybe mac) in terminal running
 import plotly.graph_objects as go
 from datetime import datetime
 from itertools import combinations
