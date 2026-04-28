@@ -35,3 +35,6 @@ Now using venv for projects, folder management updated including src folder, req
 
 25/4/26
 Weather Dashboard added, uses API key from openweathermap.org/api. Expense Analyzer is also added.
+
+28/4/26
+Path Finder renamed into Connection Analyzer; C++ projects and Java projects are added.
