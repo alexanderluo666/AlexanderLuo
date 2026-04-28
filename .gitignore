@@ -220,6 +220,6 @@ ENV/
 # VS Code settings
 .vscode/
 
-# My own for java and c++
+# My own for java and c++ -- . for C++ compiled, .class for java compiled
 .
 .class
