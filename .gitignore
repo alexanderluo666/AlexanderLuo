@@ -219,3 +219,7 @@ ENV/
 
 # VS Code settings
 .vscode/
+
+# My own for java and c++
+.
+.class
